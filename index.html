@@ -144,6 +144,16 @@ textarea{resize:vertical;line-height:1.6}
 #display .btn.big{font-size:20px;padding:12px 28px}
 .d-bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-shrink:0;height:150px}
 
+/* ============ 通知小窗 ============ */
+.notice-float{position:fixed;right:20px;top:76px;z-index:70;width:340px;max-width:calc(100vw - 40px);background:#fff;border-radius:14px;box-shadow:0 12px 36px rgba(15,23,42,.24);border:1.5px solid var(--line);overflow:hidden}
+.nf-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;cursor:move;user-select:none}
+.nf-title{font-size:13px;font-weight:600}
+.nf-btns{display:flex;gap:6px}
+.nf-btn{border:none;background:rgba(255,255,255,.22);color:#fff;width:22px;height:22px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1}
+.nf-body{padding:14px 16px;font-size:16px;line-height:1.6;min-height:52px;word-break:break-word;font-weight:600;color:#1e293b}
+.notice-float.min{width:230px}
+.notice-float.min .nf-body{padding:8px 12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:0}
+
 /* ============ 通知弹窗 ============ */
 .overlay{position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:24px}
 .notice-card{background:#fff;border-radius:24px;padding:40px;text-align:center;max-width:680px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.35);animation:pop .25s ease}
@@ -176,6 +186,7 @@ textarea{resize:vertical;line-height:1.6}
     <header class="topbar">
       <div class="brand"><div class="logo">📋</div><span id="brandName">班级工作台</span></div>
       <span id="syncStatus" class="sync">📱 本地模式</span>
+      <button id="btnNotiFloat" class="btn ghost small">📢 通知窗</button>
       <button id="btnDisplay" class="btn ghost small">🖥️ 大屏</button>
     </header>
 
@@ -282,10 +293,12 @@ textarea{resize:vertical;line-height:1.6}
         <div class="card">
           <div class="hd"><span class="ic">📝</span>登记违纪</div>
           <div class="row">
-            <select id="vStudent"></select>
-            <input id="vReason" placeholder="违纪原因，如：上课讲话">
+            <input id="vStudent" list="studentListOptions" placeholder="输入学生姓名（可重复）">
+            <datalist id="studentListOptions"></datalist>
+            <input id="vReason" placeholder="违纪原因（必填）">
             <button id="btnAddViolation" class="btn primary">记录</button>
           </div>
+          <p class="hint">直接输入姓名即可，同一学生可多次登记；之前输入过的姓名会记住，可直接点选。</p>
           <ul id="violationList" class="list"></ul>
         </div>
         <div class="card center">
@@ -353,6 +366,7 @@ textarea{resize:vertical;line-height:1.6}
     <div class="d-head">
       <div class="d-class" id="dClassName">班级工作台</div>
       <div class="d-clock"><div id="dTime">00:00</div><div id="dDate"></div></div>
+      <button id="btnNotiFloat2" class="btn ghost small">📢 通知窗</button>
       <button id="btnExitDisplay" class="btn ghost small">✕ 退出大屏</button>
     </div>
 
@@ -396,6 +410,18 @@ textarea{resize:vertical;line-height:1.6}
         <button id="btnLottery2" class="btn big">从违纪学生中抽一人</button>
       </div>
     </div>
+  </div>
+
+  <!-- 通知小窗（可拖动、可缩小） -->
+  <div id="noticeFloat" class="notice-float hidden">
+    <div class="nf-bar" id="nfBar">
+      <span class="nf-title">📢 班级通知</span>
+      <span class="nf-btns">
+        <button id="nfMin" class="nf-btn" title="缩小">－</button>
+        <button id="nfClose" class="nf-btn" title="关闭">✕</button>
+      </span>
+    </div>
+    <div class="nf-body" id="nfBody">暂无通知</div>
   </div>
 
   <!-- 通知弹窗 -->
@@ -568,7 +594,7 @@ function renderAll(){
   if(document.activeElement!==$('#punishPool'))$('#punishPool').value=state.punishments.join('\n');
   if(document.activeElement!==$('#customQuotes'))$('#customQuotes').value=state.customQuotes||'';
   if(!cloudCfg)setSyncStatus('📱 本地模式');
-  renderQuote();renderNotices();renderHomework();renderRoll();renderTodos();renderPoints();renderViolations();renderDisplay();renderCloudInfo();checkNoticeOverlay();
+  renderQuote();renderNotices();renderHomework();renderRoll();renderTodos();renderPoints();renderViolations();renderDisplay();renderCloudInfo();renderNoticeFloat();checkNoticeOverlay();
 }
 function renderNotices(){
   const ul=$('#noticeHistory');ul.innerHTML='';
@@ -605,10 +631,8 @@ function renderPoints(){
   list.forEach(s=>{const li=document.createElement('li');li.innerHTML=`<div class="grow" style="font-weight:600">${esc(s.name)}</div><span class="pts ${s.points>=0?'plus':'minus'}">${s.points}</span><button class="icon-btn green" data-act="pminus" data-id="${s.id}">−1</button><button class="icon-btn green" data-act="pplus" data-id="${s.id}">+1</button><button class="icon-btn red" data-act="delstu" data-id="${s.id}">✕</button>`;ul.appendChild(li);});
 }
 function renderViolations(){
-  const sel=$('#vStudent'),cur=sel.value;sel.innerHTML='';
-  if(!state.students.length)sel.innerHTML='<option value="">请先导入学生名单</option>';
-  else state.students.forEach(s=>{const o=document.createElement('option');o.value=s.name;o.textContent=s.name;sel.appendChild(o);});
-  if(cur)sel.value=cur;
+  const dl=$('#studentListOptions');
+  if(dl){const names=[...new Set(state.students.map(s=>s.name)),...new Set(state.violations.map(v=>v.name))];dl.innerHTML=[...new Set(names)].map(n=>`<option value="${esc(n)}"></option>`).join('');}
   const ul=$('#violationList');ul.innerHTML='';
   const list=[...state.violations].sort((a,b)=>b.ts-a.ts);
   if(!list.length)ul.innerHTML='<li class="empty">暂无违纪记录</li>';
@@ -635,6 +659,42 @@ function renderCloudInfo(){
   if(has){$('#cloudInfo').innerHTML=`当前状态：<b>已连接云端（房间 ${esc(cloudCfg.room||'')}）</b>，手机与教室电脑实时互通。`;$('#cloudCodeOut').value=encodeCloud(cloudCfg);}
   else{$('#cloudInfo').innerHTML='当前状态：本地模式（数据只存在本设备，点上方按钮创建云端即可双端同步）。';$('#cloudCodeOut').value='';}
 }
+
+/* ===== 通知小窗 ===== */
+function renderNoticeFloat(){
+  const n=state.currentNotice;
+  $('#nfBody').textContent=n?n.text:'暂无通知';
+}
+function toggleNotiFloat(force){
+  const box=$('#noticeFloat');
+  const show = (typeof force==='boolean') ? force : box.classList.contains('hidden');
+  box.classList.toggle('hidden',!show);
+  if(show)renderNoticeFloat();
+}
+$('#btnNotiFloat').onclick=()=>toggleNotiFloat();
+$('#btnNotiFloat2').onclick=()=>toggleNotiFloat();
+$('#nfClose').onclick=()=>toggleNotiFloat(false);
+$('#nfMin').onclick=()=>$('#noticeFloat').classList.toggle('min');
+(function(){
+  const box=$('#noticeFloat'),bar=$('#nfBar');
+  if(!box||!bar)return;
+  let dragging=false,sx=0,sy=0,ox=0,oy=0;
+  bar.addEventListener('pointerdown',e=>{
+    if(e.target.tagName==='BUTTON')return;
+    dragging=true;
+    const r=box.getBoundingClientRect();
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;
+    box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.right='auto';
+    try{bar.setPointerCapture(e.pointerId);}catch(err){}
+  });
+  bar.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    box.style.left=(ox+e.clientX-sx)+'px';
+    box.style.top=(oy+e.clientY-sy)+'px';
+  });
+  bar.addEventListener('pointerup',()=>{dragging=false;});
+  bar.addEventListener('pointercancel',()=>{dragging=false;});
+})();
 
 /* ===== 通知弹窗 ===== */
 function checkNoticeOverlay(){
@@ -675,14 +735,34 @@ $('#btnResetRoster').onclick=()=>{if(!confirm('重置后本轮所有人都可以
 let rollingV=false;
 function drawViolation(el){
   if(rollingV)return;
-  const pool=state.violations.filter(v=>!v.punished),names=[...new Set(pool.map(v=>v.name))];
-  if(!names.length){el.textContent='没有待处理的违纪记录';return;}
+  const pool=state.violations.filter(v=>!v.punished);
+  if(!pool.length){el.textContent='没有待处理的违纪记录';return;}
+  const names=[...new Set(pool.map(v=>v.name))];
   rollingV=true;let ticks=0;el.classList.add('showing');
-  const timer=setInterval(()=>{el.textContent='🎲 '+names[Math.floor(Math.random()*names.length)];if(++ticks>=22){clearInterval(timer);const name=names[Math.floor(Math.random()*names.length)];const punish=state.punishments.length?state.punishments[Math.floor(Math.random()*state.punishments.length)]:'';el.classList.remove('showing');state.currentViolationDraw={name,punish,ts:Date.now()};rollingV=false;commit();}},100);
+  const timer=setInterval(()=>{el.textContent='🎲 '+names[Math.floor(Math.random()*names.length)];if(++ticks>=22){
+    clearInterval(timer);
+    const name=names[Math.floor(Math.random()*names.length)];
+    const cand=pool.filter(v=>v.name===name);
+    const rec=cand[Math.floor(Math.random()*cand.length)];
+    const punish=state.punishments.length?state.punishments[Math.floor(Math.random()*state.punishments.length)]:'';
+    el.classList.remove('showing');
+    state.currentViolationDraw={name,punish,ts:Date.now(),recordId:rec.id,reason:rec.reason};
+    rollingV=false;
+    commit();
+    setTimeout(()=>{
+      const d=state.currentViolationDraw;
+      if(!d)return;
+      if(confirm('抽中了【'+d.name+'】\n违纪原因：'+(d.reason||'未填写')+'\n\n是否清除这条违纪记录？\n（确定=清除，取消=保留）')){
+        state.violations=state.violations.filter(v=>v.id!==d.recordId);
+        state.currentViolationDraw=null;
+        commit();
+      }
+    },150);
+  }},100);
 }
 $('#btnLottery').onclick=()=>drawViolation($('#lotteryResult2'));
 $('#btnLottery2').onclick=()=>drawViolation($('#dLotteryResult'));
-$('#btnMarkPunished2').onclick=()=>{const d=state.currentViolationDraw;if(!d)return;state.violations.forEach(v=>{if(v.name===d.name&&!v.punished)v.punished=true;});state.currentViolationDraw=null;commit();};
+$('#btnMarkPunished2').onclick=()=>{const d=state.currentViolationDraw;if(!d)return;const v=state.violations.find(x=>x.id===d.recordId);if(v)v.punished=true;state.currentViolationDraw=null;commit();};
 $('#btnRedraw2').onclick=()=>drawViolation($('#lotteryResult2'));
 
 /* ===== 事件绑定 ===== */
@@ -694,7 +774,7 @@ $('#btnAddTodo').onclick=addTodo;
 $('#todoInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
 $('#btnImportNames').onclick=()=>{const names=$('#bulkNames').value.split('\n').map(s=>s.trim()).filter(Boolean);if(!names.length){alert('请先在文本框里输入名单（每行一个名字）');return;}const exist=new Set(state.students.map(s=>s.name));let n=0;names.forEach(x=>{if(!exist.has(x)){state.students.push({id:uid(),name:x,points:0});n++;}});$('#bulkNames').value='';commit();alert(`导入完成，新增 ${n} 名学生`);};
 $('#btnResetPoints').onclick=()=>{if(!confirm('确定把所有学生积分清零吗？'))return;state.students.forEach(s=>s.points=0);commit();};
-$('#btnAddViolation').onclick=()=>{const name=$('#vStudent').value,reason=$('#vReason').value.trim();if(!name){alert('请先在「积分」页导入学生名单');return;}if(!reason){alert('请填写违纪原因');return;}state.violations.unshift({id:uid(),name,reason,ts:Date.now(),punished:false});$('#vReason').value='';commit();};
+$('#btnAddViolation').onclick=()=>{const name=$('#vStudent').value,reason=$('#vReason').value.trim();if(!name){alert('请输入学生姓名');return;}if(!reason){alert('请填写违纪原因');return;}state.violations.unshift({id:uid(),name,reason,ts:Date.now(),punished:false});$('#vReason').value='';commit();};
 $('#classNameInput').addEventListener('change',()=>{state.className=$('#classNameInput').value.trim()||'我的班级';commit();});
 $('#btnSavePool').onclick=()=>{state.punishments=$('#punishPool').value.split('\n').map(s=>s.trim()).filter(Boolean);commit();};
 $('#btnSaveQuotes').onclick=()=>{state.customQuotes=$('#customQuotes').value.trim();state.quoteDate=0;state.quoteIndex=0;commit();alert('励志语已保存');};
