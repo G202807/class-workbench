@@ -313,28 +313,11 @@ textarea{resize:vertical;line-height:1.6}
         </div>
         <div class="card">
           <div class="hd"><span class="ic">☁️</span>云端同步<span class="right">手机与教室电脑互通的关键</span></div>
-          <p class="hint">配置一次后，两台设备打开同一网址即可互相同步。先用「免注册快速版」体验，长期建议 LeanCloud。</p>
-          <div class="seg">
-            <button class="seg-btn active" data-cloud="jsonblob">免注册快速版</button>
-            <button class="seg-btn" data-cloud="leancloud">LeanCloud 稳定版</button>
-          </div>
-          <div id="cloudJsonBlob">
-            <button id="btnCreateBlob" class="btn primary">一键创建云端（免注册）</button>
-            <div class="row" style="margin-top:10px">
-              <input id="blobCode" placeholder="粘贴另一台设备的同步码">
-              <button id="btnConnectBlob" class="btn">连接</button>
-            </div>
-            <p class="hint">快速版数据保存在公共测试服务，30 天无访问可能被清理，重要数据请定期导出备份。</p>
-          </div>
-          <div id="cloudLeanCloud" class="hidden">
-            <input id="lcAppId" placeholder="AppID">
-            <input id="lcAppKey" placeholder="AppKey">
-            <input id="lcApiBase" placeholder="API 地址，如 https://xxxx.lc-cn-n1-shared.com">
-            <div class="row">
-              <input id="lcBoardId" placeholder="数据板 ID（连接已有时填）" style="flex:2">
-              <button id="btnLcConnect" class="btn">连接已有</button>
-              <button id="btnLcCreate" class="btn primary">创建并连接</button>
-            </div>
+          <p class="hint">免注册、免费、实时同步。手机点「一键创建云端」，把生成的链接发到教室电脑打开，两端数据就自动互通，无需注册任何账号。</p>
+          <button id="btnCreateBlob" class="btn primary block">🚀 一键创建云端（免注册·免费）</button>
+          <div class="row" style="margin-top:10px">
+            <input id="blobCode" placeholder="粘贴另一台设备的同步码">
+            <button id="btnConnectBlob" class="btn">连接</button>
           </div>
           <div id="cloudInfo" class="cloud-info"></div>
           <div class="row">
@@ -497,30 +480,61 @@ let dirty=false,saveTimer=null;
 function commit(){state.rev=(state.rev||0)+1;localStorage.setItem(LS_STATE,JSON.stringify(state));dirty=true;renderAll();scheduleCloudSave();}
 function scheduleCloudSave(){clearTimeout(saveTimer);saveTimer=setTimeout(cloudSave,600);}
 
-/* ===== 云同步（兼容原配置） ===== */
+/* ===== 云同步（MQTT 免注册实时同步） ===== */
 let cloudCfg=null;try{cloudCfg=JSON.parse(localStorage.getItem(LS_CLOUD)||'null');}catch(e){}
 (function(){const m=new URLSearchParams(location.search).get('c');if(m){try{cloudCfg=decodeCloud(m);localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));history.replaceState(null,'',location.pathname);}catch(e){console.warn('连接码无效',e);}}})();
 function encodeCloud(c){return btoa(unescape(encodeURIComponent(JSON.stringify(c)))).replace(/=+$/,'');}
 function decodeCloud(s){return JSON.parse(decodeURIComponent(escape(atob(s))));}
-function lcHeaders(){return{'X-LC-Id':cloudCfg.appId,'X-LC-Key':cloudCfg.appKey,'Content-Type':'application/json'};}
-let syncing=false;
-async function cloudPull(){if(!cloudCfg||syncing)return null;syncing=true;try{
-  if(cloudCfg.type==='jsonblob'){const r=await fetch(`https://jsonblob.com/api/jsonBlob/${cloudCfg.id}`,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}
-  else{const r=await fetch(`${cloudCfg.apiBase}/1.1/classes/Board/${cloudCfg.boardId}`,{headers:lcHeaders(),cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();return JSON.parse(j.payload);}
-}finally{syncing=false;}}
-async function cloudSave(){if(!cloudCfg)return;try{
-  if(cloudCfg.type==='jsonblob'){await fetch(`https://jsonblob.com/api/jsonBlob/${cloudCfg.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});}
-  else{await fetch(`${cloudCfg.apiBase}/1.1/classes/Board/${cloudCfg.boardId}`,{method:'PUT',headers:lcHeaders(),body:JSON.stringify({payload:JSON.stringify(state)})});}
-  dirty=false;setSyncStatus('☁️ 已同步',true);
-}catch(e){setSyncStatus('保存失败：'+e.message,false);}}
-function adoptRemote(remote){state=normalize(remote);localStorage.setItem(LS_STATE,JSON.stringify(state));renderAll();}
 function setSyncStatus(text,ok){const el=$('#syncStatus');el.textContent=text;el.className='sync'+(ok===true?' ok':ok===false?' err':'');}
-setInterval(async()=>{if(!cloudCfg)return;try{const remote=await cloudPull();if(remote&&typeof remote.rev==='number'){
-  if(dirty){if(remote.rev>state.rev){adoptRemote(remote);dirty=false;}}
-  else if(remote.rev>state.rev){adoptRemote(remote);}
-  else if(remote.rev<state.rev){await cloudSave();}
-  setSyncStatus('☁️ 已同步',true);
-}}catch(e){setSyncStatus('同步失败：'+e.message,false);}},4000);
+function adoptRemote(remote){state=normalize(remote);localStorage.setItem(LS_STATE,JSON.stringify(state));renderAll();}
+
+/* --- 极简 MQTT over WebSocket 客户端（免注册、免费、实时） --- */
+const TEnc=new TextEncoder(),TDec=new TextDecoder();
+function encLen(n){const o=[];do{let b=n%128;n=Math.floor(n/128);if(n)b|=0x80;o.push(b);}while(n);return o;}
+function mqttStr(s){const b=TEnc.encode(s);return[(b.length>>8)&255,b.length&255,...b];}
+let mq=null,mqReady=false,mqTimer=null;
+const mqId='wb'+Math.random().toString(36).slice(2,10);
+const topicState=()=>'wbclass/'+cloudCfg.room+'/state';
+const topicReq=()=>'wbclass/'+cloudCfg.room+'/req';
+function mqttConnect(){
+  if(!cloudCfg||cloudCfg.type!=='mqtt')return;
+  if(mq){try{mq.onclose=null;mq.close();}catch(e){}}
+  mqReady=false;
+  const ws=new WebSocket('wss://broker.emqx.io:8084/mqtt','mqtt');
+  ws.binaryType='arraybuffer';mq=ws;
+  ws.onopen=()=>{
+    const vh=[0,4,0x4D,0x51,0x54,0x54,4,2,0,60];
+    const body=[...vh,...mqttStr(mqId)];
+    ws.send(new Uint8Array([0x10,...encLen(body.length),...body]));
+  };
+  ws.onmessage=(ev)=>{
+    const u=new Uint8Array(ev.data);let i=0;const type=u[i++];
+    let mul=1,len=0,b;do{b=u[i++];len+=(b&127)*mul;mul*=128;}while(b&128);
+    if(type===0x20){
+      mqReady=true;setSyncStatus('☁️ 已同步',true);
+      const mid=1,subs=[(mid>>8)&255,mid&255,...mqttStr(topicState()),0,...mqttStr(topicReq()),0];
+      ws.send(new Uint8Array([0x82,...encLen(subs.length),...subs]));
+      setTimeout(()=>mqPublish(topicReq(),'REQ'),400);
+    }else if((type&0xF0)===0x30){
+      const tl=(u[i]<<8)|u[i+1];i+=2;
+      const topic=TDec.decode(u.slice(i,i+tl));i+=tl;
+      const msg=TDec.decode(u.slice(i,i+len-(2+tl)));
+      if(topic===topicReq()&&msg==='REQ'){mqPublish(topicState(),JSON.stringify(state));}
+      else if(topic===topicState()){
+        try{const remote=JSON.parse(msg);if(remote&&typeof remote.rev==='number'&&remote.rev>state.rev){adoptRemote(remote);}}catch(e){}
+      }
+    }
+  };
+  ws.onerror=()=>{setSyncStatus('连接失败',false);};
+  ws.onclose=()=>{mqReady=false;if(cloudCfg){setSyncStatus('重连中…',false);clearTimeout(mqTimer);mqTimer=setTimeout(mqttConnect,3000);}};
+}
+function mqPublish(topic,msg){
+  if(!mqReady||!mq||mq.readyState!==1)return;
+  const body=[...mqttStr(topic),...TEnc.encode(msg)];
+  try{mq.send(new Uint8Array([0x30,...encLen(body.length),...body]));}catch(e){}
+}
+function cloudSave(){if(mqReady)mqPublish(topicState(),JSON.stringify(state));}
+if(cloudCfg&&cloudCfg.type==='mqtt')mqttConnect();
 
 /* ===== 每日一句逻辑 ===== */
 function daySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
@@ -618,8 +632,8 @@ function renderDisplay(){
 }
 function renderCloudInfo(){
   const has=!!cloudCfg;$('#btnDisconnect').classList.toggle('hidden',!has);
-  if(has){$('#cloudInfo').innerHTML=`当前状态：<b>已连接 ${cloudCfg.type==='jsonblob'?'免注册快速版':'LeanCloud 稳定版'}</b>，两台设备数据将自动互通。`;$('#cloudCodeOut').value=encodeCloud(cloudCfg);}
-  else{$('#cloudInfo').innerHTML='当前状态：本地模式（数据只存在本设备）。';$('#cloudCodeOut').value='';}
+  if(has){$('#cloudInfo').innerHTML=`当前状态：<b>已连接云端（房间 ${esc(cloudCfg.room||'')}）</b>，手机与教室电脑实时互通。`;$('#cloudCodeOut').value=encodeCloud(cloudCfg);}
+  else{$('#cloudInfo').innerHTML='当前状态：本地模式（数据只存在本设备，点上方按钮创建云端即可双端同步）。';$('#cloudCodeOut').value='';}
 }
 
 /* ===== 通知弹窗 ===== */
@@ -685,16 +699,26 @@ $('#classNameInput').addEventListener('change',()=>{state.className=$('#classNam
 $('#btnSavePool').onclick=()=>{state.punishments=$('#punishPool').value.split('\n').map(s=>s.trim()).filter(Boolean);commit();};
 $('#btnSaveQuotes').onclick=()=>{state.customQuotes=$('#customQuotes').value.trim();state.quoteDate=0;state.quoteIndex=0;commit();alert('励志语已保存');};
 
-$$('.seg-btn').forEach(b=>{b.onclick=()=>{$$('.seg-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#cloudJsonBlob').classList.toggle('hidden',b.dataset.cloud!=='jsonblob');$('#cloudLeanCloud').classList.toggle('hidden',b.dataset.cloud!=='leancloud');};});
-async function testAndFinish(){try{const remote=await cloudPull();if(remote&&typeof remote.rev==='number'&&remote.rev>state.rev)adoptRemote(remote);localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));renderAll();setSyncStatus('☁️ 已连接',true);alert('云端连接成功！把「连接链接」发到教室电脑打开，或在该设备的设置页粘贴同步码，即可两端互通。');}catch(e){cloudCfg=null;renderAll();alert('连接失败：'+e.message+'\n请检查配置信息是否正确。');}}
-$('#btnCreateBlob').onclick=async()=>{try{setSyncStatus('正在创建…');const r=await fetch('https://jsonblob.com/api/jsonBlob',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});if(!r.ok)throw new Error('HTTP '+r.status);const loc=r.headers.get('Location')||r.headers.get('location');if(!loc)throw new Error('无法获取云端 ID，请改用 LeanCloud 稳定版');cloudCfg={type:'jsonblob',id:loc.split('/').pop()};dirty=true;await cloudSave();await testAndFinish();}catch(e){cloudCfg=null;setSyncStatus('创建失败',false);alert('创建失败：'+e.message);}};
-$('#btnConnectBlob').onclick=()=>{const code=$('#blobCode').value.trim();if(!code){alert('请粘贴同步码');return;}try{cloudCfg=decodeCloud(code);}catch(e){alert('同步码格式不正确');return;}testAndFinish();};
-$('#btnLcCreate').onclick=async()=>{const appId=$('#lcAppId').value.trim(),appKey=$('#lcAppKey').value.trim(),apiBase=$('#lcApiBase').value.trim().replace(/\/+$/,'');if(!appId||!appKey||!apiBase){alert('请填写 AppID、AppKey 和 API 地址');return;}cloudCfg={type:'leancloud',appId,appKey,apiBase};try{setSyncStatus('正在创建…');const r=await fetch(`${apiBase}/1.1/classes/Board`,{method:'POST',headers:lcHeaders(),body:JSON.stringify({payload:JSON.stringify(state)})});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.objectId)throw new Error(j.error||'创建失败');cloudCfg.boardId=j.objectId;dirty=false;await testAndFinish();}catch(e){cloudCfg=null;setSyncStatus('创建失败',false);alert('创建失败：'+e.message);}};
-$('#btnLcConnect').onclick=()=>{const appId=$('#lcAppId').value.trim(),appKey=$('#lcAppKey').value.trim(),apiBase=$('#lcApiBase').value.trim().replace(/\/+$/,''),boardId=$('#lcBoardId').value.trim();if(!appId||!appKey||!apiBase||!boardId){alert('请填写完整配置和数据板 ID');return;}cloudCfg={type:'leancloud',appId,appKey,apiBase,boardId};testAndFinish();};
+function makeRoom(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r='';for(let i=0;i<6;i++)r+=chars[Math.floor(Math.random()*chars.length)];
+  return r;
+}
+$('#btnCreateBlob').onclick=()=>{
+  cloudCfg={type:'mqtt',room:makeRoom()};
+  localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));
+  mqttConnect();renderAll();
+  alert('云端已创建！\n\n现在点下面的「复制连接链接」，把链接发到教室电脑打开，两端数据就互通了。');
+};
+$('#btnConnectBlob').onclick=()=>{
+  const code=$('#blobCode').value.trim();if(!code){alert('请粘贴同步码');return;}
+  try{cloudCfg=decodeCloud(code);if(cloudCfg.type!=='mqtt')throw new Error('type');localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));mqttConnect();renderAll();alert('已连接云端，正在同步数据…');}
+  catch(e){alert('同步码格式不正确');}
+};
 $('#btnCopyCode').onclick=()=>copyText($('#cloudCodeOut').value,'同步码已复制');
 $('#btnCopyLink').onclick=()=>{if(!cloudCfg){alert('请先连接云端');return;}copyText(location.origin+location.pathname+'?c='+encodeCloud(cloudCfg),'连接链接已复制，发给教室电脑打开即可');};
 function copyText(t,msg){if(!t){alert('暂无可复制内容');return;}if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert(msg));else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert(msg);}}
-$('#btnDisconnect').onclick=()=>{if(!confirm('断开后数据只保存在本设备，确定吗？'))return;cloudCfg=null;localStorage.removeItem(LS_CLOUD);renderAll();};
+$('#btnDisconnect').onclick=()=>{if(!confirm('断开后数据只保存在本设备，确定吗？'))return;if(mq)try{mq.onclose=null;mq.close();}catch(e){}mqReady=false;cloudCfg=null;localStorage.removeItem(LS_CLOUD);renderAll();};
 $('#btnExport').onclick=()=>{const data=JSON.stringify(state,null,2);$('#ioArea').value=data;const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`班级工作台备份-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);};
 $('#btnImport').onclick=()=>{try{const s=JSON.parse($('#ioArea').value);if(!confirm('导入会覆盖当前数据，确定继续吗？'))return;state=normalize(s);commit();alert('导入成功');}catch(e){alert('导入失败：内容不是有效的备份 JSON');}};
 $('#btnClearAll').onclick=()=>{if(!confirm('⚠️ 将清空所有数据，确定吗？'))return;if(!confirm('再次确认：真的要清空全部数据吗？'))return;state=normalize(null);commit();};
