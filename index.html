@@ -28,16 +28,6 @@ button,input,textarea,select{font-family:inherit}
 .sync.ok{color:var(--green);background:#ecfdf5}
 .sync.err{color:var(--red);background:#fef2f2}
 
-/* 每日一句卡片 */
-.quote{position:relative;margin:16px 16px 6px;border-radius:22px;padding:22px 24px;color:#fff;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 55%,#ec4899 120%);overflow:hidden;box-shadow:0 10px 30px rgba(99,102,241,.28)}
-.quote::after{content:"";position:absolute;right:-24px;top:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.10)}
-.quote::before{content:"";position:absolute;right:34px;bottom:-46px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.08)}
-.quote .lbl{font-size:12px;letter-spacing:2px;opacity:.85;font-weight:600;margin-bottom:10px}
-.quote .qm{font-size:46px;line-height:.6;opacity:.35;font-family:Georgia,serif;position:absolute;left:20px;top:26px}
-.quote .qt{position:relative;font-size:18px;font-weight:600;line-height:1.7;padding-left:26px;min-height:52px}
-.quote .qa{position:relative;text-align:right;font-size:13px;opacity:.85;margin-top:8px}
-.quote .qnext{position:relative;margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13px;padding:7px 14px;border-radius:999px;cursor:pointer}
-.quote .qnext:active{transform:scale(.96)}
 
 /* 标签栏 */
 .tabs{position:sticky;top:63px;z-index:19;display:flex;gap:6px;padding:10px 16px;background:rgba(241,245,249,.92);backdrop-filter:blur(12px);overflow-x:auto;scrollbar-width:none}
@@ -120,10 +110,6 @@ textarea{resize:vertical;line-height:1.6}
 #dTime{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums}
 #dDate{font-size:15px;color:#a5b4fc}
 #display .btn.ghost{color:#a5b4fc}
-.d-quote{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-left:4px solid #a78bfa;border-radius:16px;padding:14px 24px;flex-shrink:0;display:flex;align-items:center;gap:16px}
-.d-quote .qm{font-size:40px;color:#a78bfa;line-height:.6;font-family:Georgia,serif}
-.d-quote .qt{font-size:22px;font-weight:600;flex:1;line-height:1.5}
-.d-quote .qa{font-size:14px;color:#c4b5fd;white-space:nowrap}
 .d-grid{display:grid;gap:16px;flex:1;min-height:0}
 .g2{grid-template-columns:1fr 1fr}
 .d-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px 22px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
@@ -164,16 +150,12 @@ textarea{resize:vertical;line-height:1.6}
 
 @media(max-width:720px){
   .topbar{padding:12px 14px}
-  .quote{margin:14px 14px 4px;padding:20px}
-  .quote .qt{font-size:17px}
   .tabs{top:60px}
   main{padding:6px 14px 30px}
   #display{padding:16px;gap:12px}
   .d-class{font-size:26px}
   #dTime{font-size:26px}
   .d-grid,.d-bottom{grid-template-columns:1fr;overflow:auto}
-  .d-quote .qt{font-size:17px}
-  .d-quote .qa{display:none}
   .roll-stage{font-size:40px}
 }
 </style>
@@ -190,14 +172,6 @@ textarea{resize:vertical;line-height:1.6}
       <button id="btnDisplay" class="btn ghost small">🖥️ 大屏</button>
     </header>
 
-    <div class="quote">
-      <div class="qm">"</div>
-      <div class="lbl">✨ 今日一句</div>
-      <div class="qt" id="quoteText">正在加载励志语…</div>
-      <div class="qa" id="quoteAuthor"></div>
-      <button class="qnext" id="btnNextQuote">🔄 换一句</button>
-    </div>
-
     <nav class="tabs">
       <button class="tab active" data-tab="notice">📢 通知</button>
       <button class="tab" data-tab="homework">📚 作业</button>
@@ -205,6 +179,7 @@ textarea{resize:vertical;line-height:1.6}
       <button class="tab" data-tab="todo">✅ 事务</button>
       <button class="tab" data-tab="points">⭐ 积分</button>
       <button class="tab" data-tab="violation">⚠️ 违纪</button>
+      <button class="tab" data-tab="student">🎓 学生</button>
       <button class="tab" data-tab="settings">⚙️ 设置</button>
     </nav>
 
@@ -217,8 +192,18 @@ textarea{resize:vertical;line-height:1.6}
           <button id="btnSendNotice" class="btn primary block">📤 发送到教室大屏</button>
         </div>
         <div class="card">
+          <div class="hd"><span class="ic">👁️</span>通知已读情况<span class="right" id="readStat"></span></div>
+          <p class="hint" style="margin:0 0 10px">学生在教室小窗或手机上点一次"我已读"，这里累计一次。</p>
+          <div id="readRead" style="font-size:13px;line-height:1.9"></div>
+        </div>
+        <div class="card">
           <div class="hd"><span class="ic">🕘</span>历史通知</div>
           <ul id="noticeHistory" class="list"></ul>
+        </div>
+        <div class="card">
+          <div class="hd"><span class="ic">💬</span>学生留言<span class="right" id="msgStat"></span></div>
+          <p class="hint" style="margin:0 0 10px">学生在教室或手机上发给你的消息。</p>
+          <ul id="msgList" class="list"></ul>
         </div>
       </section>
 
@@ -312,33 +297,38 @@ textarea{resize:vertical;line-height:1.6}
         </div>
       </section>
 
+      <!-- 学生端 -->
+      <section id="tab-student" class="panel">
+        <div class="card">
+          <div class="hd"><span class="ic">📢</span>当前通知</div>
+          <div id="stuNoticeText" style="font-size:17px;font-weight:600;line-height:1.6;min-height:40px;margin-bottom:12px"></div>
+          <button id="btnMarkRead" class="btn primary block">✅ 我已读</button>
+          <p class="hint" id="stuReadTip" style="margin:8px 0 0"></p>
+        </div>
+        <div class="card">
+          <div class="hd"><span class="ic">✉️</span>给老师留言</div>
+          <p class="hint" style="margin:0 0 10px">不用填名字，在留言里自己写上就行，例如"张三：老师这道题没听懂"。</p>
+          <textarea id="stuMsgText" rows="3" placeholder="写上你的名字和内容，例如：张三 老师这道题没听懂"></textarea>
+          <button id="btnSendMsg" class="btn primary block">📤 发送给老师</button>
+          <ul id="stuMsgHistory" class="list" style="margin-top:12px"></ul>
+        </div>
+      </section>
+
       <!-- 设置 -->
       <section id="tab-settings" class="panel">
+        <div class="card" style="background:#eef2ff">
+          <div class="hd"><span class="ic">ℹ️</span>版本信息</div>
+          <p class="hint" style="margin:0">当前版本：正式版 · 统一入口　若无"通知窗"按钮，说明页面没刷新，请关掉网页重新打开，或在网址后加 <b>用首页网址打开即可</b> 再打开。</p>
+        </div>
         <div class="card">
           <div class="hd"><span class="ic">🏷️</span>班级名称</div>
           <input id="classNameInput" placeholder="如：高一（3）班">
         </div>
         <div class="card">
-          <div class="hd"><span class="ic">💬</span>自定义励志语</div>
-          <p class="hint">每行一句，留空则使用内置语录。可写"句子 —— 作者"。</p>
-          <textarea id="customQuotes" rows="4" placeholder="每一行一句，例如：&#10;越努力，越幸运。&#10;星光不问赶路人 —— 佚名"></textarea>
-          <button id="btnSaveQuotes" class="btn primary block">保存励志语</button>
-        </div>
-        <div class="card">
-          <div class="hd"><span class="ic">☁️</span>云端同步<span class="right">手机与教室电脑互通的关键</span></div>
-          <p class="hint">免注册、免费、实时同步。手机点「一键创建云端」，把生成的链接发到教室电脑打开，两端数据就自动互通，无需注册任何账号。</p>
-          <button id="btnCreateBlob" class="btn primary block">🚀 一键创建云端（免注册·免费）</button>
-          <div class="row" style="margin-top:10px">
-            <input id="blobCode" placeholder="粘贴另一台设备的同步码">
-            <button id="btnConnectBlob" class="btn">连接</button>
-          </div>
+          <div class="hd"><span class="ic">☁️</span>双端同步<span class="right">已自动开启</span></div>
+          <p class="hint">已经自动连好云端了，<b>你什么都不用点</b>。手机和教室电脑打开的是同一个网址，数据就会自动互通。只要两端网页都开着即可。</p>
           <div id="cloudInfo" class="cloud-info"></div>
-          <div class="row">
-            <input id="cloudCodeOut" readonly placeholder="尚未连接云端">
-            <button id="btnCopyCode" class="btn small">复制同步码</button>
-            <button id="btnCopyLink" class="btn small">复制连接链接</button>
-          </div>
-          <button id="btnDisconnect" class="btn danger small hidden">断开云端同步</button>
+          <button id="btnReconnect" class="btn small">🔄 重新同步一次</button>
         </div>
         <div class="card">
           <div class="hd"><span class="ic">🎯</span>惩罚池（可选）</div>
@@ -368,12 +358,6 @@ textarea{resize:vertical;line-height:1.6}
       <div class="d-clock"><div id="dTime">00:00</div><div id="dDate"></div></div>
       <button id="btnNotiFloat2" class="btn ghost small">📢 通知窗</button>
       <button id="btnExitDisplay" class="btn ghost small">✕ 退出大屏</button>
-    </div>
-
-    <div class="d-quote">
-      <div class="qm">"</div>
-      <div class="qt" id="dQuoteText">每日一句</div>
-      <div class="qa" id="dQuoteAuthor"></div>
     </div>
 
     <div class="d-grid g2" style="flex:1.15">
@@ -444,62 +428,19 @@ function esc(t){const d=document.createElement('div');d.textContent=t==null?'':S
 function fmtTime(ts){const d=new Date(ts),p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
 function fmtDue(s){if(!s)return'';const d=new Date(s);if(isNaN(d.getTime()))return s;const p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
 
-/* ===== 每日励志语录 ===== */
-const QUOTES=[
-  {t:'星光不问赶路人，时光不负有心人。',a:'佚名'},
-  {t:'你现在的努力，是为了将来有更多选择。',a:'佚名'},
-  {t:'自律给你自由。',a:'佚名'},
-  {t:'越努力，越幸运。',a:'佚名'},
-  {t:'今天的汗水，终会变成明天的掌声。',a:'佚名'},
-  {t:'种一棵树最好的时间是十年前，其次是现在。',a:'佚名'},
-  {t:'乾坤未定，你我皆是黑马。',a:'佚名'},
-  {t:'每一个不曾起舞的日子，都是对生命的辜负。',a:'尼采'},
-  {t:'长风破浪会有时，直挂云帆济沧海。',a:'李白'},
-  {t:'天生我材必有用，千金散尽还复来。',a:'李白'},
-  {t:'宝剑锋从磨砺出，梅花香自苦寒来。',a:'佚名'},
-  {t:'书山有路勤为径，学海无涯苦作舟。',a:'韩愈'},
-  {t:'千里之行，始于足下。',a:'老子'},
-  {t:'不积跬步，无以至千里。',a:'荀子'},
-  {t:'将来的你，一定会感谢现在拼命的自己。',a:'佚名'},
-  {t:'不怕万人阻挡，只怕自己投降。',a:'佚名'},
-  {t:'你的坚持，终将美好。',a:'佚名'},
-  {t:'心之所向，素履以往。',a:'佚名'},
-  {t:'向阳而生，逐光而行。',a:'佚名'},
-  {t:'但行好事，莫问前程。',a:'佚名'},
-  {t:'不为失败找借口，只为成功找方法。',a:'佚名'},
-  {t:'今天的努力，是明天的底气。',a:'佚名'},
-  {t:'读书破万卷，下笔如有神。',a:'杜甫'},
-  {t:'书籍是人类进步的阶梯。',a:'高尔基'},
-  {t:'少壮不努力，老大徒伤悲。',a:'《长歌行》'},
-  {t:'黑发不知勤学早，白首方悔读书迟。',a:'颜真卿'},
-  {t:'世上无难事，只怕有心人。',a:'佚名'},
-  {t:'吃得苦中苦，方为人上人。',a:'佚名'},
-  {t:'努力到无能为力，拼搏到感动自己。',a:'佚名'},
-  {t:'每一个优秀的人，都有一段沉默的时光。',a:'佚名'},
-  {t:'静坐常思己过，闲谈莫论人非。',a:'佚名'},
-  {t:'星光璀璨，源于微光的汇聚。',a:'佚名'},
-  {t:'所有的惊艳，都来自长久的准备。',a:'佚名'},
-  {t:'别让未来的你，讨厌现在不努力的自己。',a:'佚名'},
-  {t:'越自律，越自由；越努力，越幸运。',a:'佚名'},
-  {t:'有一种成功叫坚持，有一种失败叫放弃。',a:'佚名'},
-  {t:'今日披星戴月，明日闪闪发光。',a:'佚名'},
-  {t:'把平凡的事做到极致，就是不平凡。',a:'佚名'},
-  {t:'你有多自律，就有多出众。',a:'佚名'},
-  {t:'哪怕是最小的进步，也值得为之喝彩。',a:'佚名'}
-];
-
 /* ===== 状态 ===== */
-const LS_STATE='wb_class_state_v1',LS_CLOUD='wb_class_cloud_v1',LS_ACK='wb_notice_ack_ts';
+const LS_STATE='wb_class_state_v1',LS_CLOUD='wb_class_cloud_v1',LS_ACK='wb_notice_ack_ts',LS_DEV='wb_device_id';
+const MY_DEV=(function(){let d=localStorage.getItem(LS_DEV);if(!d){d='d'+Math.random().toString(36).slice(2,10);localStorage.setItem(LS_DEV,d);}return d;})();
+let seenReads={};
 const DEFAULT_STATE={
   rev:0,className:'我的班级',
-  currentNotice:null,notices:[],
+  currentNotice:null,notices:[],noticeReads:{},studentMsgs:[],
   todos:[],students:[],homeworks:[],
   rollRoster:[],rollHistory:[],currentCall:null,
   violations:[],currentViolationDraw:null,
-  punishments:['打扫卫生一天','擦黑板一周','倒垃圾一周','整理讲台与书柜'],
-  customQuotes:'',quoteDate:0,quoteIndex:0
+  punishments:['打扫卫生一天','擦黑板一周','倒垃圾一周','整理讲台与书柜']
 };
-function normalize(s){const o=JSON.parse(JSON.stringify(DEFAULT_STATE));if(!s||typeof s!=='object')return o;for(const k of Object.keys(o))if(s[k]!==undefined)o[k]=s[k];return o;}
+function normalize(s){const o=JSON.parse(JSON.stringify(DEFAULT_STATE));if(!s||typeof s!=='object')return o;for(const k of Object.keys(o))if(s[k]!==undefined)o[k]=s[k];if(o.noticeReads){for(const k in o.noticeReads){if(Array.isArray(o.noticeReads[k]))o.noticeReads[k]=o.noticeReads[k].length;}}return o;}
 function seedDemo(){const s=normalize(null);s.students=['张三','李四','王五','赵六','孙七','周八'].map(n=>({id:uid(),name:n,points:0}));localStorage.setItem(LS_STATE,JSON.stringify(s));return s;}
 let state;try{const raw=localStorage.getItem(LS_STATE);state=raw?normalize(JSON.parse(raw)):seedDemo();}catch(e){state=seedDemo();}
 let dirty=false,saveTimer=null;
@@ -507,8 +448,10 @@ function commit(){state.rev=(state.rev||0)+1;localStorage.setItem(LS_STATE,JSON.
 function scheduleCloudSave(){clearTimeout(saveTimer);saveTimer=setTimeout(cloudSave,600);}
 
 /* ===== 云同步（MQTT 免注册实时同步） ===== */
+const FIXED_ROOM='wbclass-g202807-2026';
 let cloudCfg=null;try{cloudCfg=JSON.parse(localStorage.getItem(LS_CLOUD)||'null');}catch(e){}
-(function(){const m=new URLSearchParams(location.search).get('c');if(m){try{cloudCfg=decodeCloud(m);localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));history.replaceState(null,'',location.pathname);}catch(e){console.warn('连接码无效',e);}}})();
+/* 无条件强制使用固定房间，清掉旧版遗留的随机房间号 */
+cloudCfg={type:'mqtt',room:FIXED_ROOM};localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));
 function encodeCloud(c){return btoa(unescape(encodeURIComponent(JSON.stringify(c)))).replace(/=+$/,'');}
 function decodeCloud(s){return JSON.parse(decodeURIComponent(escape(atob(s))));}
 function setSyncStatus(text,ok){const el=$('#syncStatus');el.textContent=text;el.className='sync'+(ok===true?' ok':ok===false?' err':'');}
@@ -518,10 +461,18 @@ function adoptRemote(remote){state=normalize(remote);localStorage.setItem(LS_STA
 const TEnc=new TextEncoder(),TDec=new TextDecoder();
 function encLen(n){const o=[];do{let b=n%128;n=Math.floor(n/128);if(n)b|=0x80;o.push(b);}while(n);return o;}
 function mqttStr(s){const b=TEnc.encode(s);return[(b.length>>8)&255,b.length&255,...b];}
-let mq=null,mqReady=false,mqTimer=null;
+let mq=null,mqReady=false,mqTimer=null,adoptedCloud=false;
 const mqId='wb'+Math.random().toString(36).slice(2,10);
 const topicState=()=>'wbclass/'+cloudCfg.room+'/state';
 const topicReq=()=>'wbclass/'+cloudCfg.room+'/req';
+const topicRead=()=>'wbclass/'+cloudCfg.room+'/read';
+const topicMsg=()=>'wbclass/'+cloudCfg.room+'/msg';
+const topicReads=()=>'wbclass/'+cloudCfg.room+'/reads';
+let msgList=[];                 /* 留言独立缓存 */
+let readCount={};               /* 已读独立缓存 {通知id:次数} */
+let seenMsg={};                 /* 留言去重 */
+try{msgList=JSON.parse(localStorage.getItem('wb_msg_list')||'[]')||[];msgList.forEach(m=>seenMsg[m.id]=1);}catch(e){}
+try{readCount=JSON.parse(localStorage.getItem('wb_read_count')||'{}')||{};}catch(e){}
 function mqttConnect(){
   if(!cloudCfg||cloudCfg.type!=='mqtt')return;
   if(mq){try{mq.onclose=null;mq.close();}catch(e){}}
@@ -537,69 +488,103 @@ function mqttConnect(){
     const u=new Uint8Array(ev.data);let i=0;const type=u[i++];
     let mul=1,len=0,b;do{b=u[i++];len+=(b&127)*mul;mul*=128;}while(b&128);
     if(type===0x20){
-      mqReady=true;setSyncStatus('☁️ 已同步',true);
-      const mid=1,subs=[(mid>>8)&255,mid&255,...mqttStr(topicState()),0,...mqttStr(topicReq()),0];
+      mqReady=true;setSyncStatus('☁️ 已连接云端',true);
+      const mid=1,subs=[(mid>>8)&255,mid&255,...mqttStr(topicState()),0,...mqttStr(topicReq()),0,...mqttStr(topicRead()),0,...mqttStr(topicMsg()),0,...mqttStr(topicReads()),0];
       ws.send(new Uint8Array([0x82,...encLen(subs.length),...subs]));
       setTimeout(()=>mqPublish(topicReq(),'REQ'),400);
     }else if((type&0xF0)===0x30){
       const tl=(u[i]<<8)|u[i+1];i+=2;
       const topic=TDec.decode(u.slice(i,i+tl));i+=tl;
       const msg=TDec.decode(u.slice(i,i+len-(2+tl)));
-      if(topic===topicReq()&&msg==='REQ'){mqPublish(topicState(),JSON.stringify(state));}
+      if(topic===topicReq()&&msg==='REQ'){
+        if((state.students||[]).length||(state.notices||[]).length||(state.violations||[]).length)mqPublish(topicState(),JSON.stringify(state),true);
+        if(msgList.length)mqPublish(topicMsg(),JSON.stringify(msgList),true);
+        if(Object.keys(readCount).length)mqPublish(topicReads(),JSON.stringify(readCount),true);
+      }
+      else if(topic===topicRead()){try{const ev=JSON.parse(msg);if(ev&&ev.nid)applyRead(ev.eid,ev.nid);}catch(e){}}
+      else if(topic===topicMsg()){
+        try{const arr=JSON.parse(msg);if(Array.isArray(arr)){
+          let changed=false;arr.forEach(m=>{if(m&&m.id){
+          if(m._del){const before=msgList.length;msgList=msgList.filter(x=>x.id!==m.id);if(msgList.length!==before)changed=true;return;}
+          if(!seenMsg[m.id]){seenMsg[m.id]=1;const old=msgList.find(x=>x.id===m.id);if(!old){msgList.push(m);changed=true;}
+            else if(m.handled&&!old.handled){old.handled=true;changed=true;}}
+        }});
+          msgList.sort((a,b)=>(b.ts||0)-(a.ts||0));
+          if(changed){try{localStorage.setItem('wb_msg_list',JSON.stringify(msgList));}catch(e){}renderMsgs();renderStudent();}
+        }}catch(e){}
+      }
+      else if(topic===topicReads()){
+        try{const obj=JSON.parse(msg);if(obj&&typeof obj==='object'){readCount=obj;try{localStorage.setItem('wb_read_count',JSON.stringify(readCount));}catch(e){}renderReadStat();renderStudent();}}catch(e){}
+      }
       else if(topic===topicState()){
-        try{const remote=JSON.parse(msg);if(remote&&typeof remote.rev==='number'&&remote.rev>state.rev){adoptRemote(remote);}}catch(e){}
+        try{
+          const remote=JSON.parse(msg);
+          if(remote&&typeof remote.rev==='number'){
+            const localEmpty=!((state.students||[]).length||(state.notices||[]).length||(state.violations||[]).length);
+            if(!adoptedCloud||localEmpty||remote.rev>state.rev){adoptRemote(remote);adoptedCloud=true;}
+          }
+        }catch(e){}
       }
     }
   };
   ws.onerror=()=>{setSyncStatus('连接失败',false);};
   ws.onclose=()=>{mqReady=false;if(cloudCfg){setSyncStatus('重连中…',false);clearTimeout(mqTimer);mqTimer=setTimeout(mqttConnect,3000);}};
 }
-function mqPublish(topic,msg){
+function mqPublish(topic,msg,retain){
   if(!mqReady||!mq||mq.readyState!==1)return;
   const body=[...mqttStr(topic),...TEnc.encode(msg)];
-  try{mq.send(new Uint8Array([0x30,...encLen(body.length),...body]));}catch(e){}
+  try{mq.send(new Uint8Array([(retain?0x31:0x30),...encLen(body.length),...body]));}catch(e){}
 }
-function cloudSave(){if(mqReady)mqPublish(topicState(),JSON.stringify(state));}
+function cloudSave(){if(mqReady)mqPublish(topicState(),JSON.stringify(state),true);}
+function applyRead(eid,nid){
+  if(eid&&seenReads[eid])return;
+  if(eid)seenReads[eid]=1;
+  if(typeof readCount[nid]!=='number')readCount[nid]=0;
+  readCount[nid]++;
+  try{localStorage.setItem('wb_read_count',JSON.stringify(readCount));}catch(e){}
+  mqPublish(topicReads(),JSON.stringify(readCount),true);
+  renderReadStat();renderStudent();
+}
 if(cloudCfg&&cloudCfg.type==='mqtt')mqttConnect();
-
-/* ===== 每日一句逻辑 ===== */
-function daySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();}
-function quotesPool(){
-  if(state.customQuotes){const lines=state.customQuotes.split('\n').map(s=>s.trim()).filter(Boolean);if(lines.length)return lines.map(l=>{const parts=l.split(/\s+[—–-]{1,2}\s+/);return parts.length>1?{t:parts[0],a:parts.slice(1).join(' — ')}:{t:l,a:''};});}
-  return QUOTES;
-}
-function currentQuote(){
-  const pool=quotesPool(),seed=daySeed();
-  let idx=seed%pool.length;
-  if(state.quoteDate===seed&&typeof state.quoteIndex==='number')idx=state.quoteIndex%pool.length;
-  return pool[idx];
-}
-function renderQuote(){
-  const q=currentQuote();
-  $('#quoteText').textContent=q.t;
-  $('#quoteAuthor').textContent=q.a?'—— '+q.a:'';
-  $('#dQuoteText').textContent=q.t;
-  $('#dQuoteAuthor').textContent=q.a?'—— '+q.a:'';
-}
-$('#btnNextQuote').onclick=()=>{
-  const pool=quotesPool(),seed=daySeed();
-  let idx=(state.quoteDate===seed&&typeof state.quoteIndex==='number')?state.quoteIndex:(seed%pool.length);
-  state.quoteDate=seed;state.quoteIndex=(idx+1)%pool.length;commit();
-};
 
 /* ===== 渲染 ===== */
 function renderAll(){
   $('#brandName').textContent=state.className+' · 工作台';
   if(document.activeElement!==$('#classNameInput'))$('#classNameInput').value=state.className;
   if(document.activeElement!==$('#punishPool'))$('#punishPool').value=state.punishments.join('\n');
-  if(document.activeElement!==$('#customQuotes'))$('#customQuotes').value=state.customQuotes||'';
   if(!cloudCfg)setSyncStatus('📱 本地模式');
-  renderQuote();renderNotices();renderHomework();renderRoll();renderTodos();renderPoints();renderViolations();renderDisplay();renderCloudInfo();renderNoticeFloat();checkNoticeOverlay();
+  renderNotices();renderReadStat();renderMsgs();renderStudent();renderHomework();renderRoll();renderTodos();renderPoints();renderViolations();renderDisplay();renderCloudInfo();renderNoticeFloat();checkNoticeOverlay();
 }
 function renderNotices(){
   const ul=$('#noticeHistory');ul.innerHTML='';
   if(!state.notices.length){ul.innerHTML='<li class="empty">还没有发过通知</li>';return;}
   state.notices.forEach(n=>{const li=document.createElement('li');li.innerHTML=`<div class="grow"><div class="txt">${esc(n.text)}</div><div class="meta">${fmtTime(n.ts)}</div></div><button class="icon-btn" data-act="resend" data-id="${n.id}">重新发送</button>`;ul.appendChild(li);});
+}
+function renderReadStat(){
+  const n=state.currentNotice, box=$('#readRead'), stat=$('#readStat');
+  if(!box)return;
+  if(!n||!n.text){stat.textContent='';box.innerHTML='<span style="color:var(--mute)">暂无当前通知</span>';return;}
+  const c=readCount[n.id]||0;
+  stat.textContent='已读 '+c+' 次';
+  box.innerHTML='<b style="color:var(--green)">✅ 已读：</b>'+c+' 次'+(c?'（学生已确认看到这条通知）':'（还没有人点已读）');
+}
+function renderMsgs(){
+  const ul=$('#msgList');if(!ul)return;
+  const msgs=msgList;const pend=msgs.filter(m=>!m.handled).length;
+  $('#msgStat').textContent=pend?pend+' 条未处理':'';
+  if(!msgs.length){ul.innerHTML='<li class="empty">还没有学生留言</li>';return;}
+  ul.innerHTML='';msgs.forEach(m=>{const li=document.createElement('li');li.innerHTML='<div class="grow"><div class="txt">'+esc(m.text)+'</div><div class="meta">'+fmtTime(m.ts)+(m.handled?' · 已处理':'')+'</div></div>'+(m.handled?'':'<button class="icon-btn green" data-act="msgdone" data-id="'+m.id+'">已处理</button>')+'<button class="icon-btn red" data-act="msgdel" data-id="'+m.id+'">✕</button>';ul.appendChild(li);});
+}
+function renderStudent(){
+  if(!$('#btnMarkRead'))return;
+  const n=state.currentNotice;
+  $('#stuNoticeText').textContent=n&&n.text?n.text:'暂无通知';
+  const btn=$('#btnMarkRead'),tip=$('#stuReadTip');
+  if(!n||!n.text){btn.disabled=true;tip.textContent='老师还没发通知';}
+  else{btn.disabled=false;btn.textContent='✅ 我已读';tip.textContent=(readCount[n.id]||0)+' 次已读 · 点一次记一次';}
+  const h=$('#stuMsgHistory');
+  const mine=msgList.filter(m=>m.dev===MY_DEV);
+  h.innerHTML=mine.length?mine.map(m=>'<li><div class="grow"><div class="txt">'+esc(m.text)+'</div><div class="meta">'+fmtTime(m.ts)+(m.handled?' · 老师已处理':' · 已发送')+'</div></div></li>').join(''):'<li class="empty">你还没有发过留言</li>';
 }
 function renderHomework(){
   const a=$('#homeworkList'),h=$('#homeworkHistory');a.innerHTML='';h.innerHTML='';
@@ -655,9 +640,9 @@ function renderDisplay(){
   $('#dLotteryResult').textContent=d?`${d.name}${d.punish?' · '+d.punish:''}`:'暂无待处理违纪';
 }
 function renderCloudInfo(){
-  const has=!!cloudCfg;$('#btnDisconnect').classList.toggle('hidden',!has);
-  if(has){$('#cloudInfo').innerHTML=`当前状态：<b>已连接云端（房间 ${esc(cloudCfg.room||'')}）</b>，手机与教室电脑实时互通。`;$('#cloudCodeOut').value=encodeCloud(cloudCfg);}
-  else{$('#cloudInfo').innerHTML='当前状态：本地模式（数据只存在本设备，点上方按钮创建云端即可双端同步）。';$('#cloudCodeOut').value='';}
+  $('#cloudInfo').innerHTML= mqReady
+    ? '当前状态：<b>☁️ 已自动连接云端</b>，手机与教室电脑数据实时互通。'
+    : '当前状态：正在连接云端…（请保持联网，稍后会自动连上）';
 }
 
 /* ===== 通知小窗 ===== */
@@ -766,7 +751,7 @@ $('#btnMarkPunished2').onclick=()=>{const d=state.currentViolationDraw;if(!d)ret
 $('#btnRedraw2').onclick=()=>drawViolation($('#lotteryResult2'));
 
 /* ===== 事件绑定 ===== */
-$('#btnSendNotice').onclick=()=>{const t=$('#noticeText').value.trim();if(!t){alert('请输入通知内容');return;}const n={id:uid(),text:t,ts:Date.now()};state.currentNotice=n;state.notices.unshift(n);if(state.notices.length>50)state.notices.length=50;$('#noticeText').value='';commit();};
+$('#btnSendNotice').onclick=()=>{const t=$('#noticeText').value.trim();if(!t){alert('请输入通知内容');return;}const n={id:uid(),text:t,ts:Date.now()};state.currentNotice=n;state.notices.unshift(n);if(typeof state.noticeReads[n.id]!=='number')state.noticeReads[n.id]=0;if(state.notices.length>50)state.notices.length=50;$('#noticeText').value='';commit();};
 $('#btnAddHomework').onclick=()=>{const content=$('#hwContent').value.trim();if(!content){alert('请输入作业内容');return;}const subject=$('#hwSubject').value.trim(),due=$('#hwDue').value||'';state.homeworks.unshift({id:uid(),subject,content,due,done:false,ts:Date.now()});$('#hwContent').value='';$('#hwDue').value='';commit();alert('作业已发布，教室大屏稍后显示');};
 $('#btnClearDoneHw').onclick=()=>{if(!confirm('清除所有已完成的作业记录？'))return;state.homeworks=state.homeworks.filter(h=>!h.done);commit();};
 function addTodo(){const t=$('#todoInput').value.trim();if(!t)return;state.todos.unshift({id:uid(),text:t,done:false,ts:Date.now()});$('#todoInput').value='';commit();}
@@ -775,30 +760,37 @@ $('#todoInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo();});
 $('#btnImportNames').onclick=()=>{const names=$('#bulkNames').value.split('\n').map(s=>s.trim()).filter(Boolean);if(!names.length){alert('请先在文本框里输入名单（每行一个名字）');return;}const exist=new Set(state.students.map(s=>s.name));let n=0;names.forEach(x=>{if(!exist.has(x)){state.students.push({id:uid(),name:x,points:0});n++;}});$('#bulkNames').value='';commit();alert(`导入完成，新增 ${n} 名学生`);};
 $('#btnResetPoints').onclick=()=>{if(!confirm('确定把所有学生积分清零吗？'))return;state.students.forEach(s=>s.points=0);commit();};
 $('#btnAddViolation').onclick=()=>{const name=$('#vStudent').value,reason=$('#vReason').value.trim();if(!name){alert('请输入学生姓名');return;}if(!reason){alert('请填写违纪原因');return;}state.violations.unshift({id:uid(),name,reason,ts:Date.now(),punished:false});$('#vReason').value='';commit();};
+/* 学生端事件 */
+function markRead(){
+  const n=state.currentNotice;
+  if(!n||!n.text){alert('老师还没发通知');return;}
+  const eid='e'+Date.now()+Math.random().toString(36).slice(2,7);
+  applyRead(eid,n.id);
+  alert('已记录已读');
+}
+$('#btnMarkRead').onclick=markRead;
+function syncMsg(m){try{localStorage.setItem('wb_msg_list',JSON.stringify(msgList));}catch(e){}mqPublish(topicMsg(),JSON.stringify([m]),true);renderMsgs();renderStudent();}
+function syncMsgDel(id){try{localStorage.setItem('wb_msg_list',JSON.stringify(msgList));}catch(e){}mqPublish(topicMsg(),JSON.stringify([{id:id,_del:1}]),true);renderMsgs();renderStudent();}
+function sendMsg(){
+  const t=$('#stuMsgText').value.trim();
+  if(!t){alert('请输入留言内容');return;}
+  const m={id:uid(),text:t,ts:Date.now(),handled:false,dev:MY_DEV};
+  seenMsg[m.id]=1;
+  msgList.unshift(m);
+  try{localStorage.setItem('wb_msg_list',JSON.stringify(msgList));}catch(e){}
+  mqPublish(topicMsg(),JSON.stringify([m]),true);
+  $('#stuMsgText').value='';renderMsgs();renderStudent();alert('留言已发送，老师会看到');
+}
+$('#btnSendMsg').onclick=sendMsg;
 $('#classNameInput').addEventListener('change',()=>{state.className=$('#classNameInput').value.trim()||'我的班级';commit();});
 $('#btnSavePool').onclick=()=>{state.punishments=$('#punishPool').value.split('\n').map(s=>s.trim()).filter(Boolean);commit();};
-$('#btnSaveQuotes').onclick=()=>{state.customQuotes=$('#customQuotes').value.trim();state.quoteDate=0;state.quoteIndex=0;commit();alert('励志语已保存');};
 
-function makeRoom(){
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let r='';for(let i=0;i<6;i++)r+=chars[Math.floor(Math.random()*chars.length)];
-  return r;
-}
-$('#btnCreateBlob').onclick=()=>{
-  cloudCfg={type:'mqtt',room:makeRoom()};
-  localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));
-  mqttConnect();renderAll();
-  alert('云端已创建！\n\n现在点下面的「复制连接链接」，把链接发到教室电脑打开，两端数据就互通了。');
+$('#btnReconnect').onclick=()=>{
+  if(mq)try{mq.close();}catch(e){}
+  mqReady=false;
+  setTimeout(()=>{cloudCfg={type:'mqtt',room:FIXED_ROOM};localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));mqttConnect();renderAll();},200);
+  alert('正在重新同步…');
 };
-$('#btnConnectBlob').onclick=()=>{
-  const code=$('#blobCode').value.trim();if(!code){alert('请粘贴同步码');return;}
-  try{cloudCfg=decodeCloud(code);if(cloudCfg.type!=='mqtt')throw new Error('type');localStorage.setItem(LS_CLOUD,JSON.stringify(cloudCfg));mqttConnect();renderAll();alert('已连接云端，正在同步数据…');}
-  catch(e){alert('同步码格式不正确');}
-};
-$('#btnCopyCode').onclick=()=>copyText($('#cloudCodeOut').value,'同步码已复制');
-$('#btnCopyLink').onclick=()=>{if(!cloudCfg){alert('请先连接云端');return;}copyText(location.origin+location.pathname+'?c='+encodeCloud(cloudCfg),'连接链接已复制，发给教室电脑打开即可');};
-function copyText(t,msg){if(!t){alert('暂无可复制内容');return;}if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>alert(msg));else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert(msg);}}
-$('#btnDisconnect').onclick=()=>{if(!confirm('断开后数据只保存在本设备，确定吗？'))return;if(mq)try{mq.onclose=null;mq.close();}catch(e){}mqReady=false;cloudCfg=null;localStorage.removeItem(LS_CLOUD);renderAll();};
 $('#btnExport').onclick=()=>{const data=JSON.stringify(state,null,2);$('#ioArea').value=data;const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`班级工作台备份-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);};
 $('#btnImport').onclick=()=>{try{const s=JSON.parse($('#ioArea').value);if(!confirm('导入会覆盖当前数据，确定继续吗？'))return;state=normalize(s);commit();alert('导入成功');}catch(e){alert('导入失败：内容不是有效的备份 JSON');}};
 $('#btnClearAll').onclick=()=>{if(!confirm('⚠️ 将清空所有数据，确定吗？'))return;if(!confirm('再次确认：真的要清空全部数据吗？'))return;state=normalize(null);commit();};
@@ -814,6 +806,8 @@ document.addEventListener('click',e=>{const btn=e.target.closest('[data-act]');i
   else if(act==='delstu'){if(confirm('删除该学生及其积分记录？')){state.students=state.students.filter(x=>x.id!==id);commit();}}
   else if(act==='vpunish'){const v=state.violations.find(x=>x.id===id);if(v){v.punished=true;commit();}}
   else if(act==='delvio'){state.violations=state.violations.filter(x=>x.id!==id);commit();}
+  else if(act==='msgdone'){const m=msgList.find(x=>x.id===id);if(m){m.handled=true;syncMsg(m);}}
+  else if(act==='msgdel'){msgList=msgList.filter(x=>x.id!==id);syncMsgDel(id);}
 });
 $$('.tab').forEach(t=>{t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');$$('.panel').forEach(p=>p.classList.remove('active'));$('#tab-'+t.dataset.tab).classList.add('active');};});
 
