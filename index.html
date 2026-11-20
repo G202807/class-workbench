@@ -29,6 +29,17 @@ button,input,textarea,select{font-family:inherit}
 .sync.err{color:var(--red);background:#fef2f2}
 
 
+.msgbox{margin:14px 16px 6px;border-radius:18px;padding:14px 16px;background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;box-shadow:0 8px 24px rgba(14,165,233,.28)}
+.msgbox .hd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin-bottom:10px}
+.msgbox .hd .ic{font-size:17px}
+.msgbox .right{margin-left:auto;font-size:12px;background:rgba(255,255,255,.25);padding:2px 10px;border-radius:999px}
+.msg-row{background:rgba(255,255,255,.16);border-radius:12px;padding:9px 12px;margin-top:8px;font-size:14px;line-height:1.5;word-break:break-word}
+.msg-row.handled{opacity:.72}
+.msg-row .meta{font-size:11px;opacity:.85;margin-top:4px}
+.msg-row .act{float:right;margin-left:8px;cursor:pointer;background:rgba(255,255,255,.25);border:none;color:#fff;border-radius:8px;padding:3px 9px;font-size:12px}
+.msg-empty{font-size:13px;opacity:.85}
+@media(max-width:520px){.msgbox{margin:12px 14px 4px;padding:12px}}
+
 /* 标签栏 */
 .tabs{position:sticky;top:63px;z-index:19;display:flex;gap:6px;padding:10px 16px;background:rgba(241,245,249,.92);backdrop-filter:blur(12px);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -172,6 +183,11 @@ textarea{resize:vertical;line-height:1.6}
       <button id="btnDisplay" class="btn ghost small">🖥️ 大屏</button>
     </header>
 
+    <div class="msgbox" id="msgbox">
+      <div class="hd"><span class="ic">💬</span>学生留言<span class="right" id="msgBoxStat"></span></div>
+      <div id="msgBoxList"></div>
+    </div>
+
     <nav class="tabs">
       <button class="tab active" data-tab="notice">📢 通知</button>
       <button class="tab" data-tab="homework">📚 作业</button>
@@ -199,11 +215,6 @@ textarea{resize:vertical;line-height:1.6}
         <div class="card">
           <div class="hd"><span class="ic">🕘</span>历史通知</div>
           <ul id="noticeHistory" class="list"></ul>
-        </div>
-        <div class="card">
-          <div class="hd"><span class="ic">💬</span>学生留言<span class="right" id="msgStat"></span></div>
-          <p class="hint" style="margin:0 0 10px">学生在教室或手机上发给你的消息。</p>
-          <ul id="msgList" class="list"></ul>
         </div>
       </section>
 
@@ -318,7 +329,7 @@ textarea{resize:vertical;line-height:1.6}
       <section id="tab-settings" class="panel">
         <div class="card" style="background:#eef2ff">
           <div class="hd"><span class="ic">ℹ️</span>版本信息</div>
-          <p class="hint" style="margin:0">当前版本：正式版 · 统一入口　若无"通知窗"按钮，说明页面没刷新，请关掉网页重新打开，或在网址后加 <b>用首页网址打开即可</b> 再打开。</p>
+          <p class="hint" style="margin:0">当前版本：v13 · 留言顶部显示　若无"通知窗"按钮，说明页面没刷新，请关掉网页重新打开，或在网址后加 <b>用首页网址打开即可</b> 再打开。</p>
         </div>
         <div class="card">
           <div class="hd"><span class="ic">🏷️</span>班级名称</div>
@@ -569,11 +580,19 @@ function renderReadStat(){
   box.innerHTML='<b style="color:var(--green)">✅ 已读：</b>'+c+' 次'+(c?'（学生已确认看到这条通知）':'（还没有人点已读）');
 }
 function renderMsgs(){
-  const ul=$('#msgList');if(!ul)return;
-  const msgs=msgList;const pend=msgs.filter(m=>!m.handled).length;
-  $('#msgStat').textContent=pend?pend+' 条未处理':'';
-  if(!msgs.length){ul.innerHTML='<li class="empty">还没有学生留言</li>';return;}
-  ul.innerHTML='';msgs.forEach(m=>{const li=document.createElement('li');li.innerHTML='<div class="grow"><div class="txt">'+esc(m.text)+'</div><div class="meta">'+fmtTime(m.ts)+(m.handled?' · 已处理':'')+'</div></div>'+(m.handled?'':'<button class="icon-btn green" data-act="msgdone" data-id="'+m.id+'">已处理</button>')+'<button class="icon-btn red" data-act="msgdel" data-id="'+m.id+'">✕</button>';ul.appendChild(li);});
+  const box=$('#msgBoxList');if(!box)return;
+  const msgs=msgList.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const pend=msgs.filter(m=>!m.handled).length;
+  $('#msgBoxStat').textContent=pend?pend+' 条新留言':'';
+  if(!msgs.length){box.innerHTML='<div class="msg-empty">学生留言会显示在这里，随时查看</div>';return;}
+  box.innerHTML='';msgs.forEach(m=>{
+    const d=document.createElement('div');
+    d.className='msg-row'+(m.handled?' handled':'');
+    d.innerHTML=esc(m.text)+'<span class="meta">'+fmtTime(m.ts)+(m.handled?' · 已处理':'')+'</span>'+
+      (m.handled?'':'<button class="act" data-act="msgdone" data-id="'+m.id+'">已处理</button>')+
+      '<button class="act" data-act="msgdel" data-id="'+m.id+'">✕</button>';
+    box.appendChild(d);
+  });
 }
 function renderStudent(){
   if(!$('#btnMarkRead'))return;
