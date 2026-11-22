@@ -329,7 +329,7 @@ textarea{resize:vertical;line-height:1.6}
       <section id="tab-settings" class="panel">
         <div class="card" style="background:#eef2ff">
           <div class="hd"><span class="ic">ℹ️</span>版本信息</div>
-          <p class="hint" style="margin:0">当前版本：v13 · 留言顶部显示　若无"通知窗"按钮，说明页面没刷新，请关掉网页重新打开，或在网址后加 <b>用首页网址打开即可</b> 再打开。</p>
+          <p class="hint" style="margin:0">当前版本：v14 · 已读修复版　若无"通知窗"按钮，说明页面没刷新，请关掉网页重新打开，或在网址后加 <b>用首页网址打开即可</b> 再打开。</p>
         </div>
         <div class="card">
           <div class="hd"><span class="ic">🏷️</span>班级名称</div>
@@ -550,11 +550,9 @@ function cloudSave(){if(mqReady)mqPublish(topicState(),JSON.stringify(state),tru
 function applyRead(eid,nid){
   if(eid&&seenReads[eid])return;
   if(eid)seenReads[eid]=1;
-  if(typeof readCount[nid]!=='number')readCount[nid]=0;
-  readCount[nid]++;
-  try{localStorage.setItem('wb_read_count',JSON.stringify(readCount));}catch(e){}
-  mqPublish(topicReads(),JSON.stringify(readCount),true);
-  renderReadStat();renderStudent();
+  if(typeof state.noticeReads[nid]!=='number')state.noticeReads[nid]=0;
+  state.noticeReads[nid]++;
+  commit();
 }
 if(cloudCfg&&cloudCfg.type==='mqtt')mqttConnect();
 
@@ -575,7 +573,7 @@ function renderReadStat(){
   const n=state.currentNotice, box=$('#readRead'), stat=$('#readStat');
   if(!box)return;
   if(!n||!n.text){stat.textContent='';box.innerHTML='<span style="color:var(--mute)">暂无当前通知</span>';return;}
-  const c=readCount[n.id]||0;
+  const c=state.noticeReads[n.id]||0;
   stat.textContent='已读 '+c+' 次';
   box.innerHTML='<b style="color:var(--green)">✅ 已读：</b>'+c+' 次'+(c?'（学生已确认看到这条通知）':'（还没有人点已读）');
 }
@@ -600,7 +598,7 @@ function renderStudent(){
   $('#stuNoticeText').textContent=n&&n.text?n.text:'暂无通知';
   const btn=$('#btnMarkRead'),tip=$('#stuReadTip');
   if(!n||!n.text){btn.disabled=true;tip.textContent='老师还没发通知';}
-  else{btn.disabled=false;btn.textContent='✅ 我已读';tip.textContent=(readCount[n.id]||0)+' 次已读 · 点一次记一次';}
+  else{btn.disabled=false;btn.textContent='✅ 我已读';tip.textContent=(state.noticeReads[n.id]||0)+' 次已读 · 点一次记一次';}
   const h=$('#stuMsgHistory');
   const mine=msgList.filter(m=>m.dev===MY_DEV);
   h.innerHTML=mine.length?mine.map(m=>'<li><div class="grow"><div class="txt">'+esc(m.text)+'</div><div class="meta">'+fmtTime(m.ts)+(m.handled?' · 老师已处理':' · 已发送')+'</div></div></li>').join(''):'<li class="empty">你还没有发过留言</li>';
